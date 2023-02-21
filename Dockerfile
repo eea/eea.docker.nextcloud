@@ -1,5 +1,5 @@
 # DO NOT EDIT: created by update.sh from Dockerfile-debian.template
-FROM php:7.4-apache-buster
+FROM php:8.0-apache-buster
 
 # entrypoint.sh and cron.sh dependencies
 RUN set -ex; \
@@ -62,7 +62,7 @@ RUN set -ex; \
     \
 # pecl will claim success even if one install fails, so we need to perform each install separately
     pecl install APCu-5.1.21; \
-    pecl install memcached-3.1.5; \
+    pecl install memcached-3.2.0RC2; \
     pecl install redis-5.3.7; \
     pecl install imagick-3.7.0; \
     \
@@ -89,14 +89,14 @@ RUN set -ex; \
     rm -rf /var/lib/apt/lists/*
 
 # set recommended PHP.ini settings
-# see https://docs.nextcloud.com/server/stable/admin_manual/configuration_server/server_tuning.html#enable-php-opcache
+# see https://docs.nextcloud.com/server/latest/admin_manual/installation/server_tuning.html#enable-php-opcache
 RUN { \
         echo 'opcache.enable=1'; \
-        echo 'opcache.interned_strings_buffer=8'; \
+        echo 'opcache.interned_strings_buffer=16'; \
         echo 'opcache.max_accelerated_files=10000'; \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.save_comments=1'; \
-        echo 'opcache.revalidate_freq=1'; \
+        echo 'opcache.revalidate_freq=60'; \
     } > /usr/local/etc/php/conf.d/opcache-recommended.ini; \
     \
     echo 'apc.enable_cli=1' >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini; \
@@ -122,7 +122,7 @@ RUN a2enmod headers rewrite remoteip ;\
     } > /etc/apache2/conf-available/remoteip.conf;\
     a2enconf remoteip
 
-ENV NEXTCLOUD_VERSION 21.0.9
+ENV NEXTCLOUD_VERSION 22.2.6
 
 RUN set -ex; \
     fetchDeps=" \
