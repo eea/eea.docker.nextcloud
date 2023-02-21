@@ -1,5 +1,5 @@
 # DO NOT EDIT: created by update.sh from Dockerfile-debian.template
-FROM php:8.0-apache-buster
+FROM php:8.0-apache-bullseye
 
 # entrypoint.sh and cron.sh dependencies
 RUN set -ex; \
@@ -62,7 +62,7 @@ RUN set -ex; \
     \
 # pecl will claim success even if one install fails, so we need to perform each install separately
     pecl install APCu-5.1.21; \
-    pecl install memcached-3.2.0RC2; \
+    pecl install memcached-3.2.0; \
     pecl install redis-5.3.7; \
     pecl install imagick-3.7.0; \
     \
@@ -97,15 +97,15 @@ RUN { \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.save_comments=1'; \
         echo 'opcache.revalidate_freq=60'; \
-    } > /usr/local/etc/php/conf.d/opcache-recommended.ini; \
+    } > "${PHP_INI_DIR}/conf.d/opcache-recommended.ini"; \
     \
-    echo 'apc.enable_cli=1' >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini; \
+    echo 'apc.enable_cli=1' >> "${PHP_INI_DIR}/conf.d/docker-php-ext-apcu.ini"; \
     \
     { \
         echo 'memory_limit=${PHP_MEMORY_LIMIT}'; \
         echo 'upload_max_filesize=${PHP_UPLOAD_LIMIT}'; \
         echo 'post_max_size=${PHP_UPLOAD_LIMIT}'; \
-    } > /usr/local/etc/php/conf.d/nextcloud.ini; \
+    } > "${PHP_INI_DIR}/conf.d/nextcloud.ini"; \
     \
     mkdir /var/www/data; \
     chown -R www-data:root /var/www; \
@@ -122,7 +122,7 @@ RUN a2enmod headers rewrite remoteip ;\
     } > /etc/apache2/conf-available/remoteip.conf;\
     a2enconf remoteip
 
-ENV NEXTCLOUD_VERSION 22.2.6
+ENV NEXTCLOUD_VERSION 22.2.10
 
 RUN set -ex; \
     fetchDeps=" \
