@@ -10,6 +10,7 @@ RUN set -ex; \
         bzip2 \
         busybox-static \
         libldap-common \
+        libmagickcore-6.q16-6-extra \
     ; \
     rm -rf /var/lib/apt/lists/*; \
     \
@@ -61,7 +62,7 @@ RUN set -ex; \
     ; \
     \
 # pecl will claim success even if one install fails, so we need to perform each install separately
-    pecl install APCu-5.1.21; \
+    pecl install APCu-5.1.22; \
     pecl install memcached-3.2.0; \
     pecl install redis-5.3.7; \
     pecl install imagick-3.7.0; \
@@ -97,6 +98,8 @@ RUN { \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.save_comments=1'; \
         echo 'opcache.revalidate_freq=60'; \
+        echo 'opcache.jit=1255'; \
+        echo 'opcache.jit_buffer_size=128M'; \
     } > "${PHP_INI_DIR}/conf.d/opcache-recommended.ini"; \
     \
     echo 'apc.enable_cli=1' >> "${PHP_INI_DIR}/conf.d/docker-php-ext-apcu.ini"; \
@@ -122,7 +125,7 @@ RUN a2enmod headers rewrite remoteip ;\
     } > /etc/apache2/conf-available/remoteip.conf;\
     a2enconf remoteip
 
-ENV NEXTCLOUD_VERSION 22.2.10
+ENV NEXTCLOUD_VERSION 23.0.12
 
 RUN set -ex; \
     fetchDeps=" \
