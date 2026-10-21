@@ -28,6 +28,7 @@ RUN set -ex; \
     \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+        autoconf \
         libcurl4-openssl-dev \
         libevent-dev \
         libfreetype6-dev \
@@ -35,10 +36,12 @@ RUN set -ex; \
         libicu-dev \
         libjpeg-dev \
         libldap2-dev \
+        liblz4-dev \
         libmagickwand-dev \
         libmemcached-dev \
         libpng-dev \
         libpq-dev \
+        libtool \
         libwebp-dev \
         libxml2-dev \
         libzip-dev \
@@ -63,14 +66,31 @@ RUN set -ex; \
         zip \
     ; \
     \
-# pecl will claim success even if one install fails, so we need to perform each install separately
-    pecl install APCu-5.1.27; \
-    pecl install igbinary-3.2.16; \
-    pecl install imagick-3.8.0; \
-    pecl install memcached-3.4.0 \
-        --configureoptions 'enable-memcached-igbinary="yes"'; \
-    pecl install redis-6.3.0 \
-        --configureoptions 'enable-redis-igbinary="yes" enable-redis-zstd="yes" enable-redis-lz4="yes"'; \
+# Installed with PIE (https://php.github.io/pie/) instead of pecl: pecl.php.net's
+# download/package pages return 500 from the origin as of 2026-10-21 (every
+# endpoint under /get/* and /package/*, confirmed not a CDN caching issue),
+# and PIE is PHP's own actively maintained replacement for that tooling
+# (PEAR/pecl hasn't had a tagged release since January 2026).
+#
+# igbinary has no stable release tagged on its PIE/Packagist mirror yet, only
+# 3.2.17RC1 (igbinary/igbinary), so @RC is required here; bump to a plain
+# version pin once a stable tag appears.
+#
+# redis's --enable-redis-lz4 alone is not enough: phpredis's config.m4
+# defaults --with-liblz4 to "no" (unlike --with-libzstd, which defaults to
+# "yes"), so the pkg-config lz4 check never runs without --with-liblz4=yes
+# passed explicitly too.
+    curl -fsSL -o /usr/local/bin/pie \
+        https://github.com/php/pie/releases/download/1.5.2/pie.phar; \
+    chmod +x /usr/local/bin/pie; \
+    pie install apcu/apcu:5.1.27 --auto-install-build-tools -n; \
+    pie install "igbinary/igbinary:@RC" --auto-install-build-tools -n; \
+    pie install imagick/imagick:3.8.0 --auto-install-build-tools -n; \
+    pie install php-memcached/php-memcached:3.4.0 --auto-install-build-tools -n \
+        --enable-memcached-igbinary; \
+    pie install phpredis/phpredis:6.3.0 --auto-install-build-tools -n \
+        --enable-redis-igbinary --enable-redis-zstd --enable-redis-lz4 --with-liblz4=yes; \
+    rm -f /usr/local/bin/pie; \
     \
     docker-php-ext-enable \
         apcu \
@@ -79,7 +99,6 @@ RUN set -ex; \
         memcached \
         redis \
     ; \
-    rm -r /tmp/pear; \
     \
 # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
     apt-mark auto '.*' > /dev/null; \
